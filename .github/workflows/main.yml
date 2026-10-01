@@ -1,0 +1,17 @@
+name: Tests
+on: [push, pull_request]
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: 3.11
+      - name: Install mypy and ruff
+        run: pip install mypy ruff
+      - name: Run tests
+        run: ./python/tests.sh
+      - name: Check that test vectors are up to date
+        run: git diff --exit-code

@@ -1,0 +1,17 @@
+{
+    "description": [
+        "Bitcoin wallet derivation from the secret.",
+        "",
+        "For each test case:",
+        "  xprv is the root extended private key, and receiveAddress and",
+        "  changeAddress are the first addresses of tr(xprv/0/0/0/0/<0;1>/*)."
+    ],
+    "testCases": [
+        {
+            "secret": "0101010101010101010101010101010101010101010101010101010101010101",
+            "xprv": "xprv9s21ZrQH143K24Mfq5zL5MhWK9hUhhGbd45hLXo2Pq2oqzMMo63oStZzF93yjHmmfwkTW7jWmaf7X9aF3GP9D3mXSChQcm2zAZG6kerWdMw",
+            "receiveAddress": "bc1pep252ktfxrz05jxzk4ts93jpxz6hurx2nz82yac4slxyzk2r06xq86fjw2",
+            "changeAddress": "bc1pdx4z22rx7pe9gps3mal0naczs2aqprms9upfpul506hrl5nknsdsqec4e3"
+        }
+    ]
+}

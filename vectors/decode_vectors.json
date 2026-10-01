@@ -1,0 +1,67 @@
+{
+    "description": [
+        "Decoding backups from their textual format.",
+        "",
+        "For each valid test case:",
+        "  decode(backup) gives index, scalar and polyChecksum, and encoding",
+        "  it gives the canonical form.",
+        "",
+        "For each error test case:",
+        "  decode(backup) fails, and error names the check that failed:",
+        "    index_range: the index does not fit in 32 bits.",
+        "    word_count: there are not 25 words.",
+        "    unknown_word: a word is not in the BIP39 wordlist.",
+        "    scalar_range: the scalar is not less than the group order.",
+        "    words_checksum: the words checksum fails."
+    ],
+    "validTestCases": [
+        {
+            "comment": "2-of-3 share #1 in lowercase",
+            "backup": "#1 mutual jeans snap sting bless journey moral bread room limit dose gravity sort deliver outdoor ripple donkey blouse play cart century maximum make local mobile",
+            "index": 1,
+            "scalar": "922ef7356af17af0e3e8dbbbf03d06330cf874274dd24123069911825712e1a4",
+            "polyChecksum": 26,
+            "canonical": "#1 MUTUAL JEANS SNAP STING BLESS JOURNEY MORAL BREAD ROOM LIMIT DOSE GRAVITY SORT DELIVER OUTDOOR RIPPLE DONKEY BLOUSE PLAY CART CENTURY MAXIMUM MAKE LOCAL MOBILE"
+        },
+        {
+            "comment": "2-of-3 share at the largest index, 2^32 - 1",
+            "backup": "#4294967295 SUPPLY BRING CONGRESS VIEW MAID TOWARD CRYSTAL PISTOL JUICE RANGE INDICATE UNFAIR PUSH BIRD ELITE ECHO OPPOSE TONIGHT SCRUB PUBLIC BRING YOUNG PREDICT HORSE ARENA",
+            "index": 4294967295,
+            "scalar": "d9c384bc79f861cc0d552b78d639cbf68aea2d12022f9b9c93075681c3feaa6b",
+            "polyChecksum": 110,
+            "canonical": "#4294967295 SUPPLY BRING CONGRESS VIEW MAID TOWARD CRYSTAL PISTOL JUICE RANGE INDICATE UNFAIR PUSH BIRD ELITE ECHO OPPOSE TONIGHT SCRUB PUBLIC BRING YOUNG PREDICT HORSE ARENA"
+        }
+    ],
+    "errorTestCases": [
+        {
+            "comment": "2-of-3 share #1 with its last word changed to ABANDON",
+            "backup": "#1 MUTUAL JEANS SNAP STING BLESS JOURNEY MORAL BREAD ROOM LIMIT DOSE GRAVITY SORT DELIVER OUTDOOR RIPPLE DONKEY BLOUSE PLAY CART CENTURY MAXIMUM MAKE LOCAL ABANDON",
+            "error": "words_checksum"
+        },
+        {
+            "comment": "the scalar is N",
+            "backup": "#1 ZOO ZOO ZOO ZOO ZOO ZOO ZOO ZOO ZOO ZOO ZOO WORD PRIORITY HOVER ONE TROUBLE PARENT TARGET VIRUS RUG SNACK BRASS AGREE CACTUS MIRACLE",
+            "error": "scalar_range"
+        },
+        {
+            "comment": "24 words",
+            "backup": "#1 MUTUAL JEANS SNAP STING BLESS JOURNEY MORAL BREAD ROOM LIMIT DOSE GRAVITY SORT DELIVER OUTDOOR RIPPLE DONKEY BLOUSE PLAY CART CENTURY MAXIMUM MAKE LOCAL",
+            "error": "word_count"
+        },
+        {
+            "comment": "26 words",
+            "backup": "#1 MUTUAL JEANS SNAP STING BLESS JOURNEY MORAL BREAD ROOM LIMIT DOSE GRAVITY SORT DELIVER OUTDOOR RIPPLE DONKEY BLOUSE PLAY CART CENTURY MAXIMUM MAKE LOCAL MOBILE ABANDON",
+            "error": "word_count"
+        },
+        {
+            "comment": "a word that is not in the wordlist",
+            "backup": "#1 BITCOIN JEANS SNAP STING BLESS JOURNEY MORAL BREAD ROOM LIMIT DOSE GRAVITY SORT DELIVER OUTDOOR RIPPLE DONKEY BLOUSE PLAY CART CENTURY MAXIMUM MAKE LOCAL MOBILE",
+            "error": "unknown_word"
+        },
+        {
+            "comment": "the index is 2^32",
+            "backup": "#4294967296 MUTUAL JEANS SNAP STING BLESS JOURNEY MORAL BREAD ROOM LIMIT DOSE GRAVITY SORT DELIVER OUTDOOR RIPPLE DONKEY BLOUSE PLAY CART CENTURY MAXIMUM MAKE LOCAL MOBILE",
+            "error": "index_range"
+        }
+    ]
+}

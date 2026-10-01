@@ -1,0 +1,35 @@
+{
+    "description": [
+        "Grinding the frost-v0 fingerprint into a new key.",
+        "",
+        "For each test case:",
+        "  grind(secretPolynomial) adds G to A_j increments[j] times, giving",
+        "  polynomialCommitment. The backups are shares of the ground secret",
+        "  polynomial, with a_j increased by increments[j]."
+    ],
+    "testCases": [
+        {
+            "comment": "3-of-3 with coefficients a_j = SHA256('grind a_<j>')",
+            "secretPolynomial": [
+                "fa5af842d2ebb09b59c758d74d9dd05bffcb3431b31b4d4dc6c89fd0f231c1fb",
+                "5e2dd3f35d04af88bb4eb36fbfcc857f08020f35e22d90196c45eae6d2a0de2e",
+                "640af5aa1ad540a47503a69be374c83837039133fd4bfdecc591964588d3a397"
+            ],
+            "increments": [
+                0,
+                45263,
+                80205
+            ],
+            "polynomialCommitment": [
+                "03a21e7c8d63cd64260c6d8c0634201273dfdff7ca07a8f49d8ec57aae4ac5c5be",
+                "020381fdad87ee19d310f10a282d440787cb5bc873c221b441b89abed55656143d",
+                "037ad0e3822d81b89d6a33fec624dfa640ebe69568467e2b1b258ff61cecf23d71"
+            ],
+            "backups": [
+                "#1 ROUTE OWN JOB NIGHT FOAM GOLD CHRONIC CURVE TITLE MANAGE SHY CINNAMON DRAGON WINK SQUEEZE HAT DEPOSIT SCRUB CRICKET LUMBER AMAZING RIB RAVEN HURRY TUNA",
+                "#2 EIGHT BEAUTY REFUSE VACUUM PATROL BUTTER MUSHROOM HERO CHAOS SUCCESS LECTURE LATIN RUG LEOPARD TORNADO SUNSET LOYAL ADMIT MATERIAL GRAVITY TOOL BARREL DISEASE FRONT FRAGILE",
+                "#3 OFF DECEMBER SHINE REPORT MOTION LEARN PERSON MEAN PAVE GENIUS ONE READY BLUR NOODLE NUCLEAR ORIENT SIX BALL POET PARROT INCOME DOOR READY CHICKEN SLENDER"
+            ]
+        }
+    ]
+}

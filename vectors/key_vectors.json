@@ -1,0 +1,139 @@
+{
+    "description": [
+        "Keys and their backups.",
+        "",
+        "For each valid test case:",
+        "  generate_shares(secretPolynomial, len(backups)) gives the backups",
+        "  and polynomialCommitment (secretPolynomial is already ground).",
+        "  polynomialCommitment carries fingerprintBits bits of the",
+        "  fingerprint, and every backup's polynomial checksum verifies",
+        "  against it. Any `threshold` of the backups interpolate it and",
+        "  reconstruct `secret`.",
+        "",
+        "For each error test case:",
+        "  reconstruct(backups) fails, and error names the check that failed:",
+        "    fingerprint: no group of the shares forms a key.",
+        "    poly_checksum: a backup fails its polynomial checksum."
+    ],
+    "validTestCases": [
+        {
+            "comment": "1-of-1, backed up as #0",
+            "threshold": 1,
+            "secret": "0101010101010101010101010101010101010101010101010101010101010101",
+            "secretPolynomial": [
+                "0101010101010101010101010101010101010101010101010101010101010101"
+            ],
+            "polynomialCommitment": [
+                "031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f"
+            ],
+            "fingerprintBits": 0,
+            "backups": [
+                "#0 ABSURD AMOUNT DOCTOR ACOUSTIC AVOID LETTER ADVICE CAGE ABSURD AMOUNT DOCTOR ACOUSTIC AVOID LETTER ADVICE CAGE ABSURD AMOUNT DOCTOR ACOUSTIC AVOID LETTER ADVICE CHECK WIDTH"
+            ]
+        },
+        {
+            "comment": "2-of-3",
+            "threshold": 2,
+            "secret": "0101010101010101010101010101010101010101010101010101010101010101",
+            "secretPolynomial": [
+                "0101010101010101010101010101010101010101010101010101010101010101",
+                "912df63469f079efe2e7dabaef3c05320bf773264cd14022059810815611e0a3"
+            ],
+            "polynomialCommitment": [
+                "031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f",
+                "0214ec06c944abcb9245902e82e37a23896a4069fd86ad7ae2f9cb91c59109109a"
+            ],
+            "fingerprintBits": 18,
+            "backups": [
+                "#1 MUTUAL JEANS SNAP STING BLESS JOURNEY MORAL BREAD ROOM LIMIT DOSE GRAVITY SORT DELIVER OUTDOOR RIPPLE DONKEY BLOUSE PLAY CART CENTURY MAXIMUM MAKE LOCAL MOBILE",
+                "#2 CASH TRASH FOIL PREFER BUTTER IDEA BRAVE BITTER ITEM WINK DRIFT SMILE TOMATO LUNCH OPTION HERO THREE ENGINE BLESS MANAGE HORSE JAR ADVICE SHERIFF BUSINESS",
+                "#3 REGION FINISH TRAVEL LAUNDRY CHEAP HAIR PLUNGE BANANA CRACK INTEREST DURING COTTON PHONE DISAGREE CRUNCH AIRPORT CANCEL FOLD LAUNDRY PONY LOBSTER LENS MAMMAL CLOTH FINGER"
+            ]
+        },
+        {
+            "comment": "3-of-5",
+            "threshold": 3,
+            "secret": "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+            "secretPolynomial": [
+                "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+                "4e6dfb81c2cf45d5d60b5a3f6ef2893172813854021a4a7b84b8ddd24ea47426",
+                "1750992385adba061654f2624fa742f2a59f98145617f377ffde852731ff77c1"
+            ],
+            "polynomialCommitment": [
+                "02c6b754b20826eb925e052ee2c25285b162b51fdca732bcf67e39d647fb6830ae",
+                "020edcb4850d4cd9a57009e9900bf54acdb240a2087e6071a3616808d73c8424f1",
+                "029cf188eac4090ee194ca695133762e1ad22e709cf2a7e16d5494bfcfd245e25d"
+            ],
+            "fingerprintBits": 36,
+            "backups": [
+                "#1 DUTCH GLAD TORCH EXACT PROGRAM GRASS CLUB SCRAP MUSCLE TUITION TISSUE CLERK SEA SUMMER SHIP VERY FREQUENT DIAL SYRUP MAMMAL SIMILAR MISERY PLAY RING ARM",
+                "#2 SUGAR GENERAL PARK VOYAGE CREEK FLY MOTOR ALWAYS WAVE SUNNY WARRIOR DIAMOND WAVE SUNSET ANY LEFT LIGHT FLOAT VAULT GENUINE ELBOW TENNIS BECOME TABLE CLAIM",
+                "#3 ORANGE HAMMER UNFOLD REFUSE IMMUNE FAVORITE POET MEDIA CARRY SEGMENT PULL BRUSH DAMAGE ADDRESS FILE PORTION UNFOLD BLAST ACCOUNT NATION TELL BELT DENY ABILITY FOOD",
+                "#4 MIRACLE KETCHUP SLIM MAZE GUESS FEBRUARY IDLE ENDORSE BARELY POLAR AGAIN SIBLING CLARIFY SHELL EAGER FISCAL DISTANCE FEW ABOVE SURE FRAME ENFORCE BUTTER MORNING ZOO",
+                "#5 PUMPKIN NEUTRAL DESTROY INSTALL BEHAVE FOLD UNDER EAST SHORT MAGNET WORLD DEVICE SPECIAL BUYER STONE MILLION JUNIOR BEAN UPON CRYSTAL SCENE LEARN SEARCH GALAXY SUMMER"
+            ]
+        },
+        {
+            "comment": "4-of-4: only A_1 and A_2 carry fingerprint bits",
+            "threshold": 4,
+            "secret": "0202020202020202020202020202020202020202020202020202020202020202",
+            "secretPolynomial": [
+                "0202020202020202020202020202020202020202020202020202020202020202",
+                "a1f01f71061084bf0ca43ca8dc608c36797b8b35902c44988f40263b163656d3",
+                "4e05b6d135e7c4b867e70ed80965cb4a23bc06da960b781bf712a32383656718",
+                "31e7bddc21f218ff9304974a10a29aa5fe0a796424ebe425fa83b046431a1647"
+            ],
+            "polynomialCommitment": [
+                "024d4b6cd1361032ca9bd2aeb9d900aa4d45d9ead80ac9423374c451a7254d0766",
+                "020313fcdea366087be6d6e3f6dda8e94206ab2ecf4bc9c0579fabe53a8be6133a",
+                "02a1870d54e1745899c36a2b5ad8d0d3954d7fe8a596bf5c1c2b6f8d5f66b1e179",
+                "03ffa2679439054ac606a004ca7a304f0870d6d2e76a2be48f9c033046e96c39b6"
+            ],
+            "fingerprintBits": 36,
+            "backups": [
+                "#1 CAT WITNESS MARINE SAVE SHOCK DEVELOP CHAOS DEVELOP SMOOTH SELECT RUG FATIGUE CITIZEN OBSCURE DINOSAUR ROOF ACTOR ALCOHOL SCREEN DEMAND PATH DOLPHIN FATIGUE INSECT FORCE",
+                "#2 ARTWORK REUNION SECOND TURKEY COMMON CONNECT EQUIP HOTEL AFFORD CLOCK SHRIMP OCTOBER OBJECT SHIELD JEALOUS OBVIOUS ARMOR BURDEN HABIT SHIP EYE WORTH TOP OBJECT BEGIN",
+                "#3 TRULY REPAIR WHEAT BRIDGE CANYON STUMBLE DRAMA EDGE GORILLA GROUP MANAGE ORANGE RACCOON VOICE BITTER MARKET ISSUE JOURNEY DELIVER TURN MEDAL MAN SPIRIT WEIRD REFORM",
+                "#4 TOMATO HELP WEAR TUNNEL HEAD CRUISE SPAWN CUSTOM PRETTY NEITHER TONE CLOG RELIEF ELSE QUARTER LEND ROBOT OBVIOUS BUS REGION DILEMMA SUCCESS CARRY INJECT BOARD"
+            ]
+        }
+    ],
+    "errorTestCases": [
+        {
+            "comment": "2-of-3 with every bit of #1's polynomial checksum flipped",
+            "polynomialCommitment": [
+                "031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f",
+                "0214ec06c944abcb9245902e82e37a23896a4069fd86ad7ae2f9cb91c59109109a"
+            ],
+            "backups": [
+                "#1 MUTUAL JEANS SNAP STING BLESS JOURNEY MORAL BREAD ROOM LIMIT DOSE GRAVITY SORT DELIVER OUTDOOR RIPPLE DONKEY BLOUSE PLAY CART CENTURY MAXIMUM MAKE ORIGINAL IMPULSE",
+                "#2 CASH TRASH FOIL PREFER BUTTER IDEA BRAVE BITTER ITEM WINK DRIFT SMILE TOMATO LUNCH OPTION HERO THREE ENGINE BLESS MANAGE HORSE JAR ADVICE SHERIFF BUSINESS",
+                "#3 REGION FINISH TRAVEL LAUNDRY CHEAP HAIR PLUNGE BANANA CRACK INTEREST DURING COTTON PHONE DISAGREE CRUNCH AIRPORT CANCEL FOLD LAUNDRY PONY LOBSTER LENS MAMMAL CLOTH FINGER"
+            ],
+            "error": "poly_checksum"
+        },
+        {
+            "comment": "1-of-1 with every bit of the #0 polynomial checksum flipped",
+            "backups": [
+                "#0 ABSURD AMOUNT DOCTOR ACOUSTIC AVOID LETTER ADVICE CAGE ABSURD AMOUNT DOCTOR ACOUSTIC AVOID LETTER ADVICE CAGE ABSURD AMOUNT DOCTOR ACOUSTIC AVOID LETTER ADVICE DECLINE SILK"
+            ],
+            "error": "poly_checksum"
+        },
+        {
+            "comment": "2-of-2 whose polynomial was never ground: every checksum verifies but the fingerprint check fails",
+            "secretPolynomial": [
+                "0303030303030303030303030303030303030303030303030303030303030303",
+                "0404040404040404040404040404040404040404040404040404040404040404"
+            ],
+            "polynomialCommitment": [
+                "02531fe6068134503d2723133227c867ac8fa6c83c537e9a44c3c5bdbdcb1fe337",
+                "03462779ad4aad39514614751a71085f2f10e1c7a593e4e030efb5b8721ce55b0b"
+            ],
+            "backups": [
+                "#1 ALPHA DEAL SCRUB ASTHMA IDEA LOGIC BRIGHT THOUGHT ALPHA DEAL SCRUB ASTHMA IDEA LOGIC BRIGHT THOUGHT ALPHA DEAL SCRUB ASTHMA IDEA LOGIC BRIGHT WINDOW BARELY",
+                "#2 ARCH FLAME SECURITY BID RADAR MACHINE CLUB GESTURE ARCH FLAME SECURITY BID RADAR MACHINE CLUB GESTURE ARCH FLAME SECURITY BID RADAR MACHINE CLUB GLOOM INFORM"
+            ],
+            "error": "fingerprint"
+        }
+    ]
+}

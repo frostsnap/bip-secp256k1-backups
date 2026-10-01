@@ -1,0 +1,2 @@
+# Exclude vendored package.
+extend-exclude = ["secp256k1lab/**"]
