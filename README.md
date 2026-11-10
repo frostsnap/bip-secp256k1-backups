@@ -21,9 +21,10 @@ key, this format backs up either the key itself or a [Shamir secret
 share][sss] of it, as in [FROST] wallets where the key is never
 reconstructed in one place. Several devices can each contribute entropy to
 such a key without any one of them ever holding it. Existing backup formats,
-such as [BIP39], [SLIP39] and [BIP93], cannot practically back up a key that no
-device holds: they store entropy and derive the key from it with a hash, which
-a single device must compute while holding all of the entropy.
+such as [BIP39], [SLIP39] and [BIP93], back up entropy that a one-way hash turns
+into the key. One device must therefore hold every byte that is backed up, and
+the resulting key. A key generated jointly by several devices cannot be backed
+up this way: the key already exists, and no one knows entropy that hashes to it.
 
 The format includes an 11-bit checksum to detect transcription errors and an
 8-bit polynomial checksum that binds the backup to the public polynomial it was
@@ -33,11 +34,10 @@ generated against, and therefore to the public key.
 
 A [BIP39] mnemonic does not back up a key; it backs up _entropy_. Turning that
 entropy into usable keys and addresses requires hashing it: PBKDF2 to derive the
-seed, then HMAC-SHA512 to derive the [BIP32] master key and each hardened child
-key. Each of these hashes needs the whole secret in one place. A hash is not
-homomorphic, so it cannot practically be computed across participants.
-Unhardened derivation is the exception, because it hashes only the public key
-and chain code. Needing the whole secret in one place has two consequences:
+seed, then HMAC-SHA512 to derive the [BIP32] master key. Each of these hashes
+needs the whole secret in one place. A hash is not homomorphic, so it cannot
+practically be computed across participants. Needing the whole secret in one
+place has two consequences:
 
 - **You trust one device.** A single machine holds the whole secret and both
   _generates its randomness_ and converts it into the public keys and addresses
@@ -47,9 +47,9 @@ and chain code. Needing the whole secret in one place has two consequences:
   for several parties to verifiably contribute to the secret, because the
   entropy-to-key hash cannot be evaluated efficiently across parties.
 
-The ecosystem works around this awkwardly. We already run anti-exfil protocols
-so that a device cannot bias the randomness of _signing nonces_, yet we still
-let that same device generate the far more valuable _secret key_ unchecked.
+The ecosystem works around this awkwardly. Some hardware wallets already run
+anti-exfil protocols so that a device cannot bias its _signing nonces_, yet those
+same devices generate the far more valuable _secret key_ unchecked.
 Cautious users resort to manual rituals (rolling dice, flipping coins, drawing
 words from a hat). But even then a device must convert that secret entropy into
 an extended private key, and that into public keys and addresses. Checking that
@@ -208,17 +208,16 @@ poly_checksum = H[0]            // the top 8 bits, one byte
 
 where `share_index_32` is the index as a 32-byte big-endian secp256k1 scalar.
 
-For threshold `t ≥ 2`, this checksum is verified against the public
-polynomial, which a single backup does not carry. A device restoring one share
-receives the public polynomial from another party that stored it after key
-generation, such as the wallet's coordinator (see
-[Restoring a share](#restoring-a-share)). A recovery from backups alone
+This checksum is verified against the public polynomial `F`. A `#0` backup's
+`F` is its own public key `s·G`, which the backup itself produces, so it can be
+checked immediately. That adds 8 bits of error detection but cannot show the
+key is the one you expected. For that, compare `s·G` with the expected public
+key directly. For any other backup, `F` comes from elsewhere: a device restoring
+one share receives it from another party that stored it after key generation,
+such as the wallet's coordinator (see
+[Restoring a share](#restoring-a-share)), and a recovery from backups alone
 interpolates it from the public images of any `t` shares, without assembling
-the secret (see [Verifying backups together](#verifying-backups-together)). A
-`#0` backup's public polynomial is its own public key `s·G`, so its checksum
-can be checked from the backup alone. That adds 8 bits of error detection but
-cannot show the key is the one you expected. For that, compare `s·G` with the
-expected public key directly.
+the secret (see [Verifying backups together](#verifying-backups-together)).
 
 #### Words checksum
 
@@ -420,8 +419,9 @@ A wallet MAY use further accounts by incrementing the account index; recovery
 tools SHOULD scan account indices upward from `0`.
 
 A fixed descriptor convention belongs in this document because a key held in
-shares cannot use hardened derivation (see [Motivation](#motivation)). Every
-derivation step below the root key is therefore unhardened, and fixing the
+shares cannot use hardened derivation, which hashes the parent secret key that
+no party holds whole. Every derivation step below the root key is therefore
+unhardened, and fixing the
 path and the chain code by convention means the written words alone are
 sufficient to recover the wallet and its addresses. Hardened-style derivation
 for multiparty keys is left to future work.
@@ -457,8 +457,11 @@ for other engineers to implement and adopt).
   with probability `1/2048`. That marginal gain is not worth the added
   implementation complexity; following [BIP39]'s hash-based approach keeps the
   format easy to reimplement independently.
-- **An 8-bit polynomial checksum:** eight bits suffice because the checksum is
-  bound to the secret scalar, which a malicious coordinator does not know. The
+- **An 8-bit polynomial checksum:** eight bits suffice to deter key
+  substitution, because each share's checksum is bound to that share's own
+  secret scalar, which a malicious coordinator does not know. Holding other
+  shares does not help it: fewer than `t` shares do not determine another, so
+  it still cannot forge the checksum of a share it lacks. The
   coordinator can always construct a public polynomial that is _consistent_
   with a share: it knows the share's public image `F(i)`, and for a constant
   term of its own choosing can solve for the remaining coefficients.
