@@ -442,7 +442,7 @@ write down), familiarity (a wordlist users and tooling already know),
 resistance to transcription errors, and simplicity (so that the scheme is easy
 for other engineers to implement and adopt).
 
-- **BIP39 wordlist over a fresh alphabet (e.g. [bech32][BIP173] characters):**
+- **BIP39 words over [bech32][BIP173] characters:**
   users already recognize these words, and a wide range of tooling (hardware
   wallets, printed cards) supports them. Familiar words are also far easier to
   copy by hand than random characters (hex, Base58 or bech32). The writer knows
