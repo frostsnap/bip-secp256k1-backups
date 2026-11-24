@@ -1,0 +1,31 @@
+name: PDF
+on: [push, pull_request]
+jobs:
+  pdf:
+    runs-on: ubuntu-latest
+    steps:
+      # The Makefile stamps the PDF with the last commit to touch README.md. A
+      # pull request is checked out as a throwaway merge commit by default, so
+      # check out its head instead, with the history the stamp needs.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Install pandoc
+        uses: pandoc/actions/setup@v1
+        with:
+          version: "3.11"
+      - name: Install XeLaTeX and fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            texlive-xetex texlive-latex-recommended texlive-latex-extra \
+            texlive-fonts-recommended fonts-lmodern fonts-liberation
+      - name: Build the PDF
+        run: make
+      - name: Upload the PDF
+        uses: actions/upload-artifact@v7
+        with:
+          path: README.pdf
+          archive: false
+          if-no-files-found: error
