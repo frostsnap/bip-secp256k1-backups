@@ -1,0 +1,90 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- Page ---
+\usepackage[margin=2.5cm]{geometry}
+
+% --- Fonts (xelatex) ---
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{Liberation Mono}[Scale=0.88]
+
+% --- Layout ---
+\usepackage{parskip}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.6em}
+\usepackage{titlesec}
+\titleformat*{\section}{\Large\bfseries}
+\titleformat*{\subsection}{\large\bfseries}
+\titleformat*{\subsubsection}{\normalsize\bfseries}
+\setcounter{secnumdepth}{0}
+
+% --- Black and white ---
+\usepackage{xcolor}
+\color{black}
+\usepackage[hidelinks]{hyperref}
+
+% --- Code blocks ---
+\usepackage{fvextra}
+\DefineVerbatimEnvironment{verbatim}{Verbatim}{%
+  fontsize=\small,
+  breaklines=true,
+  breakanywhere=true,
+  frame=single,
+  framerule=0.4pt,
+  framesep=6pt}
+% pandoc emits Highlighting for fenced blocks with a language
+\providecommand{\HighlightingDefined}{}
+$if(highlighting-macros)$
+$highlighting-macros$
+\RecustomVerbatimEnvironment{Highlighting}{Verbatim}{%
+  fontsize=\small,
+  breaklines=true,
+  breakanywhere=true,
+  commandchars=\\\{\}}
+$endif$
+
+% --- Page breaks ---
+% No single lines stranded at the top or bottom of a page
+\clubpenalty=10000
+\widowpenalty=10000
+% Keep a list with the line that introduces it
+\makeatletter
+\@beginparpenalty=\@M
+\makeatother
+% Never split a code block, and keep it with the text before it
+% (a block right after another block may start a new page)
+\newsavebox{\codebox}
+\AddToHook{env/verbatim/before}{%
+  \par\ifnum\lastnodetype=2 \else\nopagebreak\fi
+  \setbox\codebox\vbox\bgroup}
+\AddToHook{env/verbatim/after}{\egroup\box\codebox}
+
+% --- Tables ---
+\usepackage{longtable,booktabs,array,calc}
+\newcounter{none} % pandoc >= 3.7 sets \LTcaptype{none} for unnumbered tables
+
+% --- Lists (pandoc compat) ---
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+% --- Misc pandoc compat ---
+\providecommand{\pandocbounded}[1]{#1}
+
+$if(title)$
+\title{\textbf{$title$}}
+\date{}
+$endif$
+
+\begin{document}
+
+$if(title)$
+\maketitle
+$endif$
+
+$if(version)$
+{\small Draft $version$ ($version-date$)\par}
+$endif$
+
+$body$
+
+\end{document}
