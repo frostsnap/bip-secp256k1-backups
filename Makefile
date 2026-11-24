@@ -9,7 +9,7 @@ all: $(PDF)
 	pandoc --from=markdown --to=pdf \
 		--pdf-engine=xelatex \
 		--template=template.tex \
-		--highlight-style=monochrome \
+		--syntax-highlighting=monochrome \
 		-V version=$(VERSION) \
 		-V version-date=$(VERSION_DATE) \
 		--output=$@ $<
