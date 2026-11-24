@@ -349,8 +349,20 @@ larger key pass its check by chance about once in `2^18` tries. After a
 threshold-`2` match, a search should therefore keep trying larger subsets, and
 prefer a larger one that passes. From threshold `3` up the fingerprint has `36`
 bits, which a chance match passes only about once in `2^36` tries, so the search
-can stop at the first match. Every backup that lies on a polynomial found this
-way MUST still pass its polynomial checksum against it.
+can stop at the first match.
+
+Every backup that lies on a polynomial found this way MUST still pass its
+polynomial checksum against it. If one does not, that polynomial MUST NOT be
+accepted. The search MAY move on to other subsets. If it ends without a
+polynomial it can accept, the set MUST be rejected. The checksum catches most
+chance matches, since each individual share passes a wrong polynomial's
+checksum only about once in `2^8`.
+
+Trying several polynomials is safe here, unlike in
+[Restoring a share](#restoring-a-share), where another party chose `F`. Here
+the secret of any polynomial through a genuine share depends on that share's
+scalar, which a forger does not know. A chance match can restore the wrong
+wallet, but never a key the forger controls.
 
 ### Restoring a share
 
@@ -364,7 +376,9 @@ multiparty wallet. After checking the words checksum, the device:
 2. Verifies the polynomial checksum against `F`. Because the share lies on `F`,
    a mismatch almost certainly means the polynomial was constructed to fit the
    share. The device MUST then treat the polynomial's source as malicious and
-   warn the user, and MUST NOT retry with a different polynomial.
+   warn the user, and MUST NOT retry with a different polynomial. Each retry
+   would give that source another guess, which succeeds with probability
+   `1/256`.
 
 ### Reconstruction
 

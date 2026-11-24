@@ -187,6 +187,36 @@ def test_composed_sets() -> None:
     assert error == "whole_key_with_shares"
 
 
+# A made-up #1 whose line through #2 of the 2-of-3 key vector passes the
+# fingerprint check, as about one foreign backup in 2^18 does by chance. It is
+# not a chance find: its scalar is that #2's scalar less 1021656, found by
+# grinding, so most of its words match #2's. Its polynomial checksum was then
+# computed against the line, where a chance match would almost always fail it.
+CHANCE_MATCH = (
+    "#1 CASH TRASH FOIL PREFER BUTTER IDEA BRAVE BITTER ITEM WINK DRIFT SMILE "
+    "TOMATO LUNCH OPTION HERO THREE ENGINE BLESS MANAGE HORSE HUNT POST SOUL MANUAL"
+)
+
+
+def test_chance_match() -> None:
+    _, real_2, real_3 = key_backups("2-of-3")
+    foreign = decode(CHANCE_MATCH)
+    line = interpolate([(b.index, b.scalar * G) for b in (foreign, real_2)])
+    assert fingerprint_bits(line) == 18 and verify_poly_checksum(foreign, line)
+    assert not verify_poly_checksum(real_2, line)
+
+    # The line through the foreign #1 and the real #2 is tried first. The real
+    # share's checksum rules it out, and the search goes on to the real key.
+    _, on, off = find_polynomial([foreign, real_2, real_3])
+    assert on == [real_2, real_3] and off == [foreign]
+    _, on, off = find_polynomial([foreign, real_2, real_3], 2)
+    assert on == [real_2, real_3] and off == [foreign]
+    assert error_of(reconstruct, [foreign, real_2, real_3]) == "not_on_polynomial"
+
+    # With nothing else to find, the checksum failure is what gets reported.
+    assert error_of(find_polynomial, [foreign, real_2]) == "poly_checksum"
+
+
 def main() -> None:
     test_decode_vectors()
     test_key_vectors()
@@ -194,6 +224,7 @@ def main() -> None:
     test_wallet_vectors()
     test_restore_share()
     test_composed_sets()
+    test_chance_match()
     print("All tests passed")
 
 

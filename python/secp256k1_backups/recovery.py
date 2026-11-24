@@ -39,9 +39,15 @@ def find_polynomial(
 
     See "Verifying backups together". Subsets of t backups are tried, or of
     2, 3, ... backups when t is not known, never with two backups at the same
-    index. The first F with the most fingerprint bits is kept, and the search
-    stops early at MAX_BITS_TOTAL. Every backup on F must pass its polynomial
-    checksum. Return F, the backups that lie on it and those that do not.
+    index. Each subset gives one F. Each F that passes the fingerprint check is
+    a candidate only if every backup on it also passes its polynomial checksum.
+
+    Only one F is returned. A candidate with the full MAX_BITS_TOTAL fingerprint
+    bits, which means threshold 3 or more, is returned as soon as it is found.
+    A threshold-2 candidate has fewer bits, so the search keeps the first one
+    and carries on in case a full one turns up.
+
+    Return F, the backups that lie on it and those that do not.
     """
     if any(backup.index == 0 for backup in backups):
         raise RecoveryError(
@@ -67,7 +73,8 @@ def find_polynomial(
         for chosen in combinations(indices, size)
         for subset in product(*(by_index[i] for i in chosen))
     )
-    best: tuple[int, list[GE]] | None = None
+    best: tuple[int, list[GE], list[Backup], list[Backup]] | None = None
+    ruled_out: list[Backup] = []
     for subset in subsets:
         F = interpolate([(backup.index, backup.scalar * G) for backup in subset])
         # A zero top coefficient means the subset fits a smaller threshold. No
@@ -75,11 +82,30 @@ def find_polynomial(
         if any(A.infinity for A in F):
             continue
         bits = fingerprint_bits(F)
-        if bits is not None and (best is None or bits > best[0]):
-            best = (bits, F)
-            if bits == MAX_BITS_TOTAL:
-                break
+        if bits is None or (best is not None and bits <= best[0]):
+            continue
+        on_F = [
+            evaluate_public(F, backup.index) == backup.scalar * G for backup in backups
+        ]
+        on = [backup for backup, ok in zip(backups, on_F) if ok]
+        failed = [backup for backup in on if not verify_poly_checksum(backup, F)]
+        if failed:
+            # The fingerprint passed by chance, or a backup is corrupted. Either
+            # way this F is ruled out and the search moves on.
+            ruled_out = ruled_out or failed
+            continue
+        off = [backup for backup, ok in zip(backups, on_F) if not ok]
+        best = (bits, F, on, off)
+        if bits == MAX_BITS_TOTAL:
+            break
     if best is None:
+        if ruled_out:
+            raise RecoveryError(
+                "poly_checksum",
+                f"Polynomial checksum failed for share {_names(ruled_out)}. A share "
+                "may be from a different key or mistranscribed, or fewer shares than "
+                "the threshold were given.",
+            )
         if t is None:
             raise RecoveryError(
                 "fingerprint",
@@ -94,18 +120,7 @@ def find_polynomial(
             "different key or was mistranscribed.",
         )
 
-    F = best[1]
-    on_F = [evaluate_public(F, backup.index) == backup.scalar * G for backup in backups]
-    on = [backup for backup, ok in zip(backups, on_F) if ok]
-    off = [backup for backup, ok in zip(backups, on_F) if not ok]
-    failed = [backup for backup in on if not verify_poly_checksum(backup, F)]
-    if failed:
-        raise RecoveryError(
-            "poly_checksum",
-            f"Polynomial checksum failed for share {_names(failed)}. A share may be "
-            "from a different key or mistranscribed, or fewer shares than the "
-            "threshold were given.",
-        )
+    _, F, on, off = best
     return F, on, off
 
 
