@@ -13,56 +13,49 @@
 
 ## Abstract
 
-This document specifies a backup format that encodes a secp256k1 secret key as a
-share index followed by 25 words from the [BIP39] English wordlist.
+This document specifies a format for backing up a secp256k1 secret key, or a
+[Shamir secret share][sss] of one, as a share index followed by 25 words from
+the [BIP39] English wordlist. Unlike [BIP39], [SLIP39] and [BIP93], which back
+up entropy that is hashed into a key, this format encodes the secret scalar
+directly, so it can back up keys that are generated collaboratively by several
+devices, such as those in [FROST] wallets.
 
-By encoding the secret key directly, rather than entropy to be hashed into a
-key, this format backs up either the key itself or a [Shamir secret
-share][sss] of it, as in [FROST] wallets where the key is never
-reconstructed in one place. Several devices can each contribute entropy to
-such a key without any one of them ever holding it. Existing backup formats,
-such as [BIP39], [SLIP39] and [BIP93], back up entropy that a one-way hash turns
-into the key. One device must therefore hold every byte that is backed up, and
-the resulting key. A key generated jointly by several devices cannot be backed
-up this way: the key already exists, and no one knows entropy that hashes to it.
-
-The format includes an 11-bit checksum to detect transcription errors and an
-8-bit polynomial checksum that binds the backup to the public polynomial it was
-generated against, and therefore to the public key.
+Each backup carries an 11-bit checksum against transcription errors and an
+8-bit polynomial checksum that binds it to the public polynomial it belongs to,
+and therefore also to the public key. The document defines the
+[Taproot][BIP341] descriptor used to derive the wallet's addresses, so that the
+written words alone can recover the wallet.
 
 ## Motivation
 
-A [BIP39] mnemonic does not back up a key; it backs up _entropy_. Turning that
+A [BIP39] mnemonic does not back up a key; it backs up entropy. Turning that
 entropy into usable keys and addresses requires hashing it: PBKDF2 to derive the
 seed, then HMAC-SHA512 to derive the [BIP32] master key. Each of these hashes
 needs the whole secret in one place. A hash is not homomorphic, so it cannot
-practically be computed across participants. Needing the whole secret in one
-place has two consequences:
+practically be computed across parties. This has two consequences:
 
-- **You trust one device.** A single machine holds the whole secret and both
-  _generates its randomness_ and converts it into the public keys and addresses
-  you will receive to. Without independent verification on a second device, you
-  have to trust it on both counts.
+- **One device must be trusted.** It holds the whole secret, generates its
+  randomness, and converts it into the public keys and addresses that will
+  receive funds. Without a second device to check its work, the user has to
+  trust it.
 - **The key cannot be generated collaboratively.** There is no practical way
-  for several parties to verifiably contribute to the secret, because the
-  entropy-to-key hash cannot be evaluated efficiently across parties.
+  for several parties to verifiably contribute to the secret.
 
 The ecosystem works around this awkwardly. Some hardware wallets already run
-anti-exfil protocols so that a device cannot bias its _signing nonces_, yet those
-same devices generate the far more valuable _secret key_ unchecked.
-Cautious users resort to manual rituals (rolling dice, flipping coins, drawing
-words from a hat). But even then a device must convert that secret entropy into
-an extended private key, and that into public keys and addresses. Checking that
-it did so faithfully takes a second, independent _verifier_ device. Distributed
-key generation (DKG) and related distributed-randomness protocols solve the
-problem properly: multiple parties verifiably contribute entropy, no single
-party ever holds the secret, and every participant verifies the resulting public
-key through the protocol itself.
+anti-exfil protocols so that a device cannot choose its own signing nonces, yet
+those same devices generate the far more valuable secret key unchecked. Cautious
+users generate entropy by hand, with dice or coins. Even then a device must turn
+that entropy into an extended private key, and that into public keys and
+addresses. Checking that it did so faithfully takes a second, independent
+device. Distributed key generation (DKG) and related
+distributed-randomness protocols solve the problem: multiple parties verifiably
+contribute entropy, no single party ever holds the secret, and every party
+verifies the resulting public key through the protocol itself.
 
-This format backs up the **secret key itself**. A key's public form `s·G` is
-homomorphic, so the key can be generated interactively, with no single device
-dictating the resulting addresses. The scheme extends naturally to
-[Shamir secret shares][sss], since a share is itself just a secret scalar.
+This format backs up the secret key itself. The map from `s` to its public key
+`s·G` is homomorphic, so several devices can generate a key together, with no
+single device dictating the resulting addresses. A [Shamir secret share][sss] is
+also a secret scalar, so the same encoding backs up shares.
 
 Whether backing up a whole key or a share of a key, users need a format that is:
 
@@ -73,10 +66,9 @@ Whether backing up a whole key or a share of a key, users need a format that is:
   already know.
 - **Bound to its key:** able to detect after restoration that a backup is
   being associated with the wrong public key, for example by a dishonest
-  coordinating device in a multiparty wallet. Script multisignature wallets
-  suffer the same problem largely unaddressed: nothing in the format checks
-  that a restored seed is being paired with the right descriptor and
-  co-signers, and users rarely verify this by other means.
+  coordinator in a multiparty wallet. Script multisignature wallets
+  face the same problem: nothing in a [BIP39] backup ties a restored seed to
+  its wallet's descriptor and co-signers, so that check is left to the user.
 - **Interoperable:** recoverable from the written words by any implementation
   of this specification, so funds do not depend on the wallet that created the
   backup.
@@ -87,9 +79,14 @@ The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY in this document are
 to be interpreted as described in [RFC 2119][RFC2119] and [RFC 8174][RFC8174]
 when, and only when, they appear in all capitals.
 
+The sections below define how a backup is encoded, how a trusted dealer
+generates shares and what a DKG must do to produce the same, how a set of
+backups is verified together, how a single share is restored onto a signing
+device, how the secret is reconstructed, and how wallet addresses are derived.
+
 A backup encodes only secret key material and its checksums. It carries no
 [output descriptor][BIP380], derivation policy, address labels or other wallet
-metadata: everything else is derived deterministically from the key (see
+metadata. Everything else is derived deterministically from the key (see
 [Bitcoin wallet derivation](#bitcoin-wallet-derivation) below). Nor does it
 record the threshold (see [Rationale](#rationale)).
 
@@ -210,14 +207,17 @@ where `share_index_32` is the index as a 32-byte big-endian secp256k1 scalar.
 
 This checksum is verified against the public polynomial `F`. A `#0` backup's
 `F` is its own public key `s·G`, which the backup itself produces, so it can be
-checked immediately. That adds 8 bits of error detection but cannot show the
-key is the one you expected. For that, compare `s·G` with the expected public
-key directly. For any other backup, `F` comes from elsewhere: a device restoring
-one share receives it from another party that stored it after key generation,
-such as the wallet's coordinator (see
-[Restoring a share](#restoring-a-share)), and a recovery from backups alone
-interpolates it from the public images of any `t` shares, without assembling
-the secret (see [Verifying backups together](#verifying-backups-together)).
+checked immediately. This provides 8 bits of error detection, but it cannot
+confirm that `s·G` is the public key the user expected. That needs a direct
+comparison with the expected key.
+
+For a share, `F` comes from outside the backup. When one share is restored onto
+a signing device, another party provides `F`, typically the wallet's
+coordinator, which stored it after key generation or interpolated it from other
+shares' public images (see [Restoring a share](#restoring-a-share)). When a
+wallet is recovered from backups alone, `F` is interpolated from the public
+images of any `t` of them, without assembling the secret (see
+[Verifying backups together](#verifying-backups-together)).
 
 #### Words checksum
 
@@ -250,8 +250,8 @@ generation supplies `F`: either a trusted dealer provides it, or a DKG computes
 it. A key with threshold `1` MUST be backed up as `#0`, regardless of how it was
 generated or how many copies are made. Its `F` is just `s·G`, so knowing the
 secret alone suffices. The rest of this section concerns keys with threshold
-`t ≥ 2`, whose shares MUST NOT use index `0`: the point `(0, f(0))` is the
-secret itself.
+`t ≥ 2`, whose shares MUST NOT use index `0`, since the point `(0, f(0))` is
+the secret itself.
 
 With a trusted dealer, shares of a secret `s` (a non-zero secp256k1 scalar)
 for threshold `t` and share count `n` (`2 ≤ t ≤ n`) are produced as follows:
@@ -323,7 +323,7 @@ polynomial `g(x) = k_1·x + … + k_(t-1)·x^(t-1)` is public, and each share
 
 For threshold `t ≥ 2`, a set of share backups is checked against the public
 polynomial without assembling the secret. A `#0` backup is not a share and is
-left out: it lies on every public polynomial of its key, since `F(0) = s·G`,
+left out. It lies on every public polynomial of its key, since `F(0) = s·G`,
 and is recovered on its own (see [Reconstruction](#reconstruction)). Write each
 backup as `(x_i, y_i)`, its index and its scalar:
 
@@ -429,18 +429,20 @@ for multiparty keys is left to future work.
 Because every step is unhardened, anyone holding an extended public key can
 derive every public key beneath it. With its all-zero chain code, the root
 public key `A_0` alone is such a key: it, and the public polynomial `F` that
-contains it, reveal every address, and should be kept as private as an `xpub`. A
-wallet SHOULD therefore export its watch-only descriptor from the `xpub` of its
-account key (`m/0/0/0/0` for the first account), which gives the same addresses
-but nothing above or beside that account. The first step, to the application key
-`m/0`, leaves the root key free for an implementation's own use.
+contains it, reveal every address, and should be kept as private as an `xpub`.
+Like any `xpub`, `A_0` combined with any one derived private key also reveals
+the root secret `s` (see [BIP32]). A wallet SHOULD therefore export its
+watch-only descriptor from the `xpub` of its account key (`m/0/0/0/0` for the
+first account), which gives the same addresses but nothing above or beside that
+account. The first step, to the
+application key `m/0`, leaves the root key free for an implementation's own use.
 
 ## Rationale
 
-The format balances several desired properties: backup length (fewer words to
-write down), familiarity (a wordlist users and tooling already know),
-resistance to transcription errors, and simplicity (so that the scheme is easy
-for other engineers to implement and adopt).
+The format balances backup length (fewer words to write down), familiarity (a
+wordlist users and tooling already know), resistance to transcription errors,
+and simplicity (so that the scheme is easy for other engineers to implement and
+adopt).
 
 - **BIP39 words over [bech32][BIP173] characters:**
   users already recognize these words, and a wide range of tooling (hardware
@@ -458,19 +460,16 @@ for other engineers to implement and adopt).
   implementation complexity; following [BIP39]'s hash-based approach keeps the
   format easy to reimplement independently.
 - **An 8-bit polynomial checksum:** eight bits suffice to deter key
-  substitution, because each share's checksum is bound to that share's own
-  secret scalar, which a malicious coordinator does not know. Holding other
-  shares does not help it: fewer than `t` shares do not determine another, so
-  it still cannot forge the checksum of a share it lacks. The
-  coordinator can always construct a public polynomial that is _consistent_
-  with a share: it knows the share's public image `F(i)`, and for a constant
-  term of its own choosing can solve for the remaining coefficients.
-  Consistency alone therefore does not protect against key substitution. The
-  checksum does, because the coordinator cannot evaluate `H` without
-  `secret_scalar`. It cannot search offline for a substitute polynomial that
-  passes, so it is left with a single blind guess that succeeds with
-  probability `1/256`. [Restoring a share](#restoring-a-share) forbids a second
-  guess.
+  substitution. A malicious coordinator can always construct a public
+  polynomial that is _consistent_ with a share. It knows the share's public
+  image `F(i)`, and for a constant term of its own choosing can solve for the
+  remaining coefficients. Consistency alone therefore does not protect against
+  key substitution. The checksum does, because `H` covers the share's own
+  `secret_scalar`, which the coordinator does not know. Holding other shares
+  does not help it, since fewer than `t` shares do not determine another. It
+  cannot search offline for a substitute polynomial that passes, so it is left
+  with a single blind guess that succeeds with probability `1/256`.
+  [Restoring a share](#restoring-a-share) forbids a second guess.
 - **Fingerprint parameters:** grinding cost is exponential in the bits per
   coefficient but linear in the number of coefficients, so spreading `36` bits
   over two coefficients costs about `2^19` hashes rather than `2^36`. At `36`
@@ -480,11 +479,12 @@ for other engineers to implement and adopt).
 - **Sequential share indices:** simple and deterministic; the index doubles as
   the number written after `#`, so small sequential indices keep it short
   enough to write.
-- **Related work ([SLIP39]):** SLIP39 also encodes Shamir shares as mnemonic
-  words, but over `GF(256)` with its own wordlist. A `GF(256)` share admits no
-  elliptic-curve arithmetic, so SLIP39 shares cannot serve threshold-signing
-  protocols such as [FROST]. This scheme instead operates on the secp256k1
-  scalar field the keys already live in and reuses the BIP39 wordlist.
+- **Related work ([SLIP39], [BIP93]):** both encode Shamir shares over small
+  fields: SLIP39 as words from its own wordlist over `GF(256)`, and BIP93 as
+  bech32 strings over `GF(32)`. Shares over these fields admit no
+  elliptic-curve arithmetic, so they cannot serve threshold-signing protocols
+  such as [FROST]. This scheme instead works directly in the secp256k1 scalar
+  field and reuses the BIP39 wordlist.
 - **No threshold in the backup:** the threshold `t` and share count `n` are not
   encoded. The 25 words have no spare bits, and a readable encoding would cost
   a whole extra word. The threshold is not secret, so it can be written next to
